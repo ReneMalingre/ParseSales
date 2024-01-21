@@ -6,6 +6,12 @@ document
       alert("No file selected!");
       return;
     }
+    if (!containsWord(file.name, "Sales")) {
+      alert(
+        "Please select a Sales CSV file (the file name must include the word 'Sales'"
+      );
+      return;
+    }
     updateEndDateFromFileName(file.name, "endDate");
   });
 
@@ -15,6 +21,12 @@ document
     const file = event.target.files[0];
     if (!file) {
       alert("No file selected!");
+      return;
+    }
+    if (!containsWord(file.name, "Timesheet")) {
+      alert(
+        "Please select a Timesheet Report CSV file (the file name must include the word 'Timesheet'"
+      );
       return;
     }
     updateEndDateFromFileName(file.name, "endDateStaff");
@@ -75,11 +87,11 @@ document.getElementById("processBtn").addEventListener("click", function () {
         const tsvData = csvToTsv(results);
         console.log(tsvData); // You can see the TSV data in the console
         // Now you can proceed with your processing
-        const alleveData = processCSV(tsvData, startDate, endDate);
-        if (alleveData) {
+        const salesData = processCSV(tsvData, startDate, endDate);
+        if (salesData) {
           saveJSON(
-            alleveData,
-            `Alleve Sales Summary ${startDateStr} to ${endDateStr}.json`
+            salesData,
+            `Sales Summary ${startDateStr} to ${endDateStr}.json`
           );
         }
       },
@@ -94,7 +106,12 @@ function processCSV(csvContent, startDate, endDate) {
   const staffSales = [];
   const servicesSales = [];
   const productSales = [];
-
+  const clinicName = document.getElementById("clinic-name").value;
+  if (!clinicName) {
+    alert("Please enter a clinic name.");
+    return;
+  }
+  clinicName = clinicName.trim();
   rows.forEach((row, index) => {
     // get all the columns of the row
     const columns = row.split("\t").map((cell) => cell.trim());
@@ -118,7 +135,7 @@ function processCSV(csvContent, startDate, endDate) {
       if (columns.includes("StaffMemberName")) {
         for (let i = index + 1; i < rows.length; i++) {
           const staffColumns = rows[i].split("\t").map((cell) => cell.trim()); // Should split the current staff row
-          if (staffColumns[0] === "Alleve Eye Clinic" && staffColumns[2]) {
+          if (staffColumns[0] === clinicName && staffColumns[2]) {
             staffSales.push({
               StaffMemberName: staffColumns[2],
               StaffTotal: parseNumericValue(staffColumns[3]),
@@ -210,9 +227,6 @@ function processCSV(csvContent, startDate, endDate) {
     }
   });
 
-  console.log("TotalNetSalesForThePeriod:", totalNetSales);
-  console.log("StaffSales:", staffSales);
-
   if (totalNetSales) {
     return {
       StartDate: formatDateToISO(startDate),
@@ -262,11 +276,11 @@ document
         skipEmptyLines: false, // Set to false to keep blank lines
         complete: function (results) {
           const tsvData = csvToTsv(results);
-          const alleveData = processCSVStaff(tsvData, startDate, endDate);
-          if (alleveData) {
+          const staffData = processCSVStaff(tsvData, startDate, endDate);
+          if (staffData) {
             saveJSON(
-              alleveData,
-              `Alleve Staff Summary ${startDateStr} to ${endDateStr}.json`
+              staffData,
+              `Staff Summary ${startDateStr} to ${endDateStr}.json`
             );
           }
         },
@@ -278,7 +292,12 @@ document
 function processCSVStaff(csvContent, startDate, endDate) {
   const rows = csvContent.split("\n");
   const staffSchedules = [];
-
+  const clinicName = document.getElementById("clinic-name").value;
+  if (!clinicName) {
+    alert("Please enter a clinic name.");
+    return;
+  }
+  clinicName = clinicName.trim();
   rows.forEach((row, index) => {
     // get all the columns of the row
     const columns = row.split("\t").map((cell) => cell.trim());
@@ -288,7 +307,7 @@ function processCSVStaff(csvContent, startDate, endDate) {
     const endTimeColumnIndex = 4;
     const busyTimeColumnIndex = 6;
     const breakTimeColumnIndex = 7;
-    if (columns.includes("Alleve Eye Clinic")) {
+    if (columns.includes(clinicName)) {
       const scheduleColumns = row.split("\t").map((cell) => cell.trim());
       if (scheduleColumns[1] && scheduleColumns[2]) {
         const startTime = scheduleColumns[startTimeColumnIndex];
@@ -460,3 +479,35 @@ function convertMinutesToHours(minutes) {
   const mins = minutes % 60;
   return `${hours}:${mins.toString().padStart(2, "0")}`;
 }
+
+function containsWord(fileName, word) {
+  // Escape special regex characters in the word to avoid errors
+  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // Dynamically create a new RegExp object with the 'i' flag for case-insensitivity
+  const regex = new RegExp(escapedWord, "i");
+
+  return regex.test(fileName);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Load clinic name from localStorage on page load
+  const clinicName = localStorage.getItem("clinicName");
+  if (clinicName) {
+    document.getElementById("clinic-name").value = clinicName;
+  }
+
+  // Add event listener for form submission
+  document
+    .getElementById("clinic-form")
+    .addEventListener("submit", function (event) {
+      event.preventDefault(); // Prevent the form from submitting the traditional way
+
+      const name = document.getElementById("clinic-name").value;
+      if (name) {
+        // Save the clinic name to localStorage
+        localStorage.setItem("clinicName", name);
+        alert("Clinic name saved!");
+      }
+    });
+});
