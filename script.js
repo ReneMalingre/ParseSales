@@ -496,18 +496,18 @@ document.addEventListener("DOMContentLoaded", () => {
   if (clinicName) {
     document.getElementById("clinic-name").value = clinicName;
   }
-
-  // Add event listener for form submission
-  document
-    .getElementById("clinic-form")
-    .addEventListener("submit", function (event) {
-      event.preventDefault(); // Prevent the form from submitting the traditional way
-
-      const name = document.getElementById("clinic-name").value;
-      if (name) {
-        // Save the clinic name to localStorage
-        localStorage.setItem("clinicName", name);
-        alert("Clinic name saved!");
-      }
-    });
 });
+
+// Add event listener for form submission
+document
+  .getElementById("clinic-form")
+  .addEventListener("submit", function (event) {
+    event.preventDefault(); // Prevent the form from submitting the traditional way
+
+    const name = document.getElementById("clinic-name").value.trim();
+    if (name) {
+      // Save the clinic name to localStorage
+      localStorage.setItem("clinicName", name);
+      alert("Clinic name saved!");
+    }
+  });
